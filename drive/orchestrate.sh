@@ -171,9 +171,10 @@ cmd_status() {
   printf 'phase   : %s\n' "$(phase)"
   printf 'round   : %s/%s\n' "$(round)" "$ASTRA_MAX_ROUNDS"
   local tsk="$STATE_DIR/TASK.md" rvw="$STATE_DIR/REVIEW.md"
-  [[ -f "$tsk" ]] && printf 'task    : %s\n' "$(head -c 80 "$tsk")"
-  [[ -f "$rvw" ]] && printf 'review  : present (%s)\n' "$(head -c 40 "$rvw")"
-  [[ -f "$START_COMMIT_FILE" ]] && printf 'worker  : started at %s\n' "$(start_commit)"
+  [[ -f "$tsk" ]] && printf 'task    : %s\n' "$(head -c 80 "$tsk")" || true
+  [[ -f "$rvw" ]] && printf 'review  : present (%s)\n' "$(head -c 40 "$rvw")" || true
+  [[ -f "$START_COMMIT_FILE" ]] && printf 'worker  : started at %s\n' "$(start_commit)" || true
+  return 0
 }
 
 cmd_start() {
