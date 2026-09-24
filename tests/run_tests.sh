@@ -89,10 +89,10 @@ grep -q '^ANTHROPIC_API_KEY=' "$STUB_LOG" && bad "subscription key leaked" || ok
 # ---------------------------------------------------------------- driver loop
 echo "== drive/orchestrate.sh loop =="
 : > "$STUB_LOG"
-bash "$ASTRA_HOME/drive/orchestrate.sh" start "test task" >/dev/null 2>&1
+bash "$ASTRA_HOME/drive/orchestrate.sh" start "task-abc123" >/dev/null 2>&1
 check "phase=plan after start" test "$(cat "$TMP/proj/.astra/PHASE")" = plan
 check "round=0 after start"    test "$(cat "$TMP/proj/.astra/ROUND")" = 0
-grep -q 'test task' "$ASTRA_RUN_DIR"/*.command && ok "planner receives task description" || bad "planner receives task description"
+grep -q 'task-abc123' "$ASTRA_RUN_DIR"/*.command && ok "planner receives task description" || bad "planner receives task description"
 
 bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true
 check "no TASK.md -> stay plan" test "$(cat "$TMP/proj/.astra/PHASE")" = plan
