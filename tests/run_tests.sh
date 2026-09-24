@@ -141,6 +141,30 @@ printf 'ISSUES\nstill broken\n' > "$TMP/proj/.astra/REVIEW.md"
 bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true   # round2 -> exceeds MAX -> escalated
 check "escalated after 2 rounds" test "$(cat "$TMP/proj/.astra/PHASE")" = escalated
 
+# ---------------------------------------------------------------- zero-change handoff
+echo "== zero-change (verification packet) handoff =="
+: > "$STUB_LOG"
+bash "$ASTRA_HOME/drive/orchestrate.sh" start "verify zero-change" >/dev/null 2>&1
+echo "TASK: verification only, no commits allowed" > "$TMP/proj/.astra/TASK.md"
+sleep 1
+echo "accepted" > "$TMP/proj/.astra/EVIDENCE.md"
+bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true
+check "fresh evidence, no start -> review"     test "$(cat "$TMP/proj/.astra/PHASE")" = review
+grep -q 'reviewer/model' "$ASTRA_RUN_DIR"/*.command && ok "manual worker -> reviewer opened" || bad "manual worker -> reviewer opened"
+
+bash "$ASTRA_HOME/drive/orchestrate.sh" start "zero-change round2" >/dev/null 2>&1
+echo "TASK: verify again" > "$TMP/proj/.astra/TASK.md"
+sleep 1
+bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true   # no evidence yet -> working
+check "no evidence -> working"                 test "$(cat "$TMP/proj/.astra/PHASE")" = working
+touch -t 202001010000 "$TMP/proj/.astra/EVIDENCE.md"
+bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true   # stale evidence -> still working
+check "stale evidence -> stays working"        test "$(cat "$TMP/proj/.astra/PHASE")" = working
+sleep 1                                        # ensure EVIDENCE mtime > WORKER_START_COMMIT (-nt is strict)
+touch "$TMP/proj/.astra/EVIDENCE.md"
+bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true   # fresh evidence, head==start -> review
+check "fresh evidence in working -> review"    test "$(cat "$TMP/proj/.astra/PHASE")" = review
+
 # ---------------------------------------------------------------- summary
 echo
 printf 'passed=%s failed=%s\n' "$pass" "$fail"

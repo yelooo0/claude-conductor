@@ -84,7 +84,7 @@ planner_seed() {
 
 reviewer_seed() {
   local seed
-  seed='You are the claude-astra reviewer/model, the final gate in a two-agent orchestration loop. Context: a DeepSeek worker (lower-cost model) implemented .astra/TASK.md and committed its work. Verify it yourself, on the worker commit: read the diff, read .astra/EVIDENCE.md, and RUN the acceptance commands from TASK.md (tests/lint/build) in the repo. Then write .astra/REVIEW.md. First line must be APPROVED or ISSUES. APPROVED only if every acceptance check passes on the worker commit AND the diff genuinely implements the packet. ISSUES: numbered, one fix per issue, severity + file:line + the concrete expected fix; the worker fixes exactly those and nothing else. Do NOT edit code yourself. Finish with a Notes for Planner section on anything mis-scoped so the next packet is better. Keep it one batched review pass — no back-and-forth polling.'
+  seed='You are the claude-astra reviewer/model, the final gate in a two-agent orchestration loop. Context: a DeepSeek worker (lower-cost model) implemented .astra/TASK.md. Its changes are either committed on HEAD or sit as an uncommitted working-tree diff (verification packets forbid commits) — read the diff (git diff, plus git status for untracked files). Verify it yourself: read the diff, read .astra/EVIDENCE.md, and RUN the acceptance commands from TASK.md (tests/lint/build) in the repo. Then write .astra/REVIEW.md. First line must be APPROVED or ISSUES. APPROVED only if every acceptance check passes AND the diff genuinely implements the packet. ISSUES: numbered, one fix per issue, severity + file:line + the concrete expected fix; the worker fixes exactly those and nothing else. Do NOT edit code yourself. Finish with a Notes for Planner section on anything mis-scoped so the next packet is better. Keep it one batched review pass — no back-and-forth polling.'
   spawn_terminal "reviewer" "$(require_claude)" "$seed"
 }
 
@@ -98,6 +98,18 @@ transition() {
   case "$current" in
     plan)
       [[ -f "$STATE_DIR/TASK.md" ]] || return 0
+      # If the worker was launched manually (worker/launch.sh) and already
+      # finished a zero-change packet (e.g. a verification packet that forbids
+      # commits), fresh EVIDENCE.md with no recorded start means the handoff
+      # happened without us: skip the worker and go straight to review.
+      if [[ -z "$(start_commit)" \
+            && -f "$STATE_DIR/EVIDENCE.md" \
+            && "$STATE_DIR/EVIDENCE.md" -nt "$STATE_DIR/TASK.md" ]]; then
+        set_phase review
+        notify "Reviewer" "Worker delivered a zero-change packet (no commit). Reviewing now."
+        reviewer_seed
+        return 0
+      fi
       set_phase working
       record_start_commit
       notify "Worker" "Packet ready. Switching to DeepSeek worker."
@@ -108,7 +120,18 @@ transition() {
       [[ -n "$(start_commit)" ]] || { set_phase plan; return 0; }
       local head
       head="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
-      [[ "$head" != "$(start_commit)" ]] || return 0
+      if [[ "$head" == "$(start_commit)" ]]; then
+        # No new commit: the worker can still finish a packet without one
+        # (verification packets forbid commits). EVIDENCE.md written after the
+        # worker started is the zero-change completion signal.
+        if [[ -f "$STATE_DIR/EVIDENCE.md" \
+              && "$STATE_DIR/EVIDENCE.md" -nt "$START_COMMIT_FILE" ]]; then
+          set_phase review
+          notify "Reviewer" "Worker finished a zero-change packet (no commit). Reviewing working tree."
+          reviewer_seed
+        fi
+        return 0
+      fi
       set_phase review
       notify "Reviewer" "Worker committed. Switching back to Claude Pro review."
       reviewer_seed
@@ -156,7 +179,7 @@ cmd_status() {
 cmd_start() {
   local desc="$*"
   [[ -n "$desc" ]] || die "usage: orchestrate.sh start \"<task description>\""
-  rm -f "$STATE_DIR/TASK.md" "$STATE_DIR/REVIEW.md" "$START_COMMIT_FILE"
+  rm -f "$STATE_DIR/TASK.md" "$STATE_DIR/REVIEW.md" "$START_COMMIT_FILE" "$STATE_DIR/EVIDENCE.md"
   set_round 0
   set_phase plan
   printf '%s\n' "$desc" > "$STATE_DIR/DESC"
