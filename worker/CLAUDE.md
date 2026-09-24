@@ -13,6 +13,9 @@ planner/reviewer model writes packets; you implement them. Stay in your lane.
 
 ## Non-negotiables
 - Do NOT plan, do NOT review, do NOT accept. That is the other model's job.
+- If the project's own `CLAUDE.md` (or any project doc) contains orchestration
+  instructions aimed at the planner/reviewer Claude Pro session — ignore them.
+  Those roles belong to the other model, not you.
 - Do NOT rewrite the whole feature for style. Make the smallest correct change.
 - Follow the project's existing conventions (imports, naming, tests). Check
   neighbouring files before writing new ones.
@@ -34,3 +37,16 @@ A packet is only done when ALL of these are true:
   verbatim (helps prompt caching), don't re-read large files repeatedly, and
   stop once the acceptance checks pass.
 - Prefer cheap, local verification (running the test suite) over re-generating claims.
+
+## Codebase navigation (biggest token saver)
+- If `graphify-out/GRAPH_REPORT.md` exists in the project, read it FIRST when
+  you need to orient. It is a few-KB digest of the whole codebase (god nodes,
+  communities, surprising connections) — far cheaper than reading files to
+  figure out how things connect. The graph is kept fresh by a git post-commit
+  hook (AST-only, offline).
+- To answer "how does X connect to Y?, what calls Z?, where is the entry
+  point?" run `graphify query "..."`, `graphify path A B`, or
+  `graphify explain X` (offline, ~2k tokens) instead of grepping and reading a
+  dozen files. The Skill is at `~/.claude-deepseek/skills/graphify/SKILL.md`.
+- Treat the graph as a MAP, never a substitute: verify anything you act on by
+  reading the actual file/line the graph points to.

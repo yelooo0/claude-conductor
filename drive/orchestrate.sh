@@ -78,13 +78,13 @@ worker_cmd() {
 
 planner_seed() {
   local seed
-  seed='You are the claude-astra planner/model. Write an execution packet to .astra/TASK.md using the claude-astra packet template: Objective, Scope, Acceptance (exact commands), Constraints, Definition of Done. Keep it one small verifiable packet. No implementation. The DeepSeek worker will execute it and a review follows.'
+  seed='You are the claude-astra planner/model in a two-agent orchestration loop. Context: a smaller, cheaper model (DeepSeek deepseek-v4-flash via the DeepSeek API, running as the official Claude Code integration) is the WORKER that will implement what you write; a later pass of this Claude Pro session is the REVIEWER. Your job is planning only. Because the worker is a smaller model, write packets that are mechanically verifiable: exact files/imports to touch, exact acceptance commands and the expected outcome for each, explicit out-of-scope, no ambiguity left to infer. The worker system prompt forbids scope creep, planning and review. Write the packet to .astra/TASK.md using the packet template (Objective, Scope, Acceptance, Constraints, Definition of Done + reviewer success criteria). Keep it ONE small verifiable change; split larger features across multiple packets. Do NOT implement anything in this session. Do not ask the user to paste context — explore the repo yourself and derive the packet from the requested task. If the task is too big or underspecified, say so in .astra/TASK.md under Constraints and ask the user to split it.'
   spawn_terminal "planner" "$(require_claude)" "$seed"
 }
 
 reviewer_seed() {
   local seed
-  seed='You are the claude-astra reviewer/model. Review the packet in .astra/TASK.md against the current git diff and .astra/EVIDENCE.md. Run the acceptance checks yourself on the worker commit. Then write .astra/REVIEW.md: start with APPROVED or ISSUES, then numbered issues with severity, file:line, and concrete fixes. Do not edit code. Escalate at end with Notes for Planner.'
+  seed='You are the claude-astra reviewer/model, the final gate in a two-agent orchestration loop. Context: a DeepSeek worker (lower-cost model) implemented .astra/TASK.md and committed its work. Verify it yourself, on the worker commit: read the diff, read .astra/EVIDENCE.md, and RUN the acceptance commands from TASK.md (tests/lint/build) in the repo. Then write .astra/REVIEW.md. First line must be APPROVED or ISSUES. APPROVED only if every acceptance check passes on the worker commit AND the diff genuinely implements the packet. ISSUES: numbered, one fix per issue, severity + file:line + the concrete expected fix; the worker fixes exactly those and nothing else. Do NOT edit code yourself. Finish with a Notes for Planner section on anything mis-scoped so the next packet is better. Keep it one batched review pass — no back-and-forth polling.'
   spawn_terminal "reviewer" "$(require_claude)" "$seed"
 }
 

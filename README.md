@@ -65,6 +65,7 @@ Driver env: `ASTRA_PROJECT_DIR`, `ASTRA_MAX_ROUNDS` (default 2),
 
 - `docs/PROTOCOL.md` — the handoff protocol, state files, routing table, escalation policy
 - `docs/COST.md` — cost model, worker-tier choice, the prompt-caching lever
+- `docs/GRAPHIFY.md` — knowledge-graph navigation (Graphify) integration: ~82–90% less context per orientation query
 - `doctor.sh` — offline prerequisite checks (spends nothing)
 
 ## Layout
