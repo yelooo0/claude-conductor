@@ -77,8 +77,13 @@ worker_cmd() {
 }
 
 planner_seed() {
+  local desc="${1:-}"
   local seed
   seed='You are the claude-astra planner/model in a two-agent orchestration loop. Context: a smaller, cheaper model (DeepSeek deepseek-v4-flash via the DeepSeek API, running as the official Claude Code integration) is the WORKER that will implement what you write; a later pass of this Claude Pro session is the REVIEWER. Your job is planning only. Because the worker is a smaller model, write packets that are mechanically verifiable: exact files/imports to touch, exact acceptance commands and the expected outcome for each, explicit out-of-scope, no ambiguity left to infer. The worker system prompt forbids scope creep, planning and review. Write the packet to .astra/TASK.md using the packet template (Objective, Scope, Acceptance, Constraints, Definition of Done + reviewer success criteria). Keep it ONE small verifiable change; split larger features across multiple packets. Do NOT implement anything in this session. Do not ask the user to paste context — explore the repo yourself and derive the packet from the requested task. If the task is too big or underspecified, say so in .astra/TASK.md under Constraints and ask the user to split it.'
+  [[ -n "$desc" ]] && seed="$seed
+
+The user's requested task for this packet is:
+$desc"
   spawn_terminal "planner" "$(require_claude)" "$seed"
 }
 
@@ -185,7 +190,7 @@ cmd_start() {
   set_phase plan
   printf '%s\n' "$desc" > "$STATE_DIR/DESC"
   notify "Planner" "New packet requested. Claude Pro session opening to write TASK.md."
-  planner_seed
+  planner_seed "$desc"
   echo "phase=plan. Planner window opened -> write .astra/TASK.md, then run:  orchestrate.sh watch"
 }
 

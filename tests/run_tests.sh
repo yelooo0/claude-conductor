@@ -92,6 +92,7 @@ echo "== drive/orchestrate.sh loop =="
 bash "$ASTRA_HOME/drive/orchestrate.sh" start "test task" >/dev/null 2>&1
 check "phase=plan after start" test "$(cat "$TMP/proj/.astra/PHASE")" = plan
 check "round=0 after start"    test "$(cat "$TMP/proj/.astra/ROUND")" = 0
+grep -q 'test task' "$STUB_LOG" && ok "planner receives task description" || bad "planner receives task description"
 
 bash "$ASTRA_HOME/drive/orchestrate.sh" watch --once >/dev/null 2>&1 || true
 check "no TASK.md -> stay plan" test "$(cat "$TMP/proj/.astra/PHASE")" = plan
