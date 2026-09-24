@@ -1,0 +1,11 @@
+# handoff state lives per-project (never commit it)
+**.astra/
+.astra/
+
+# local secrets / run artifacts
+*.key
+~/.claude-astra/
+*.command
+
+# python artifacts
+__pycache__/
