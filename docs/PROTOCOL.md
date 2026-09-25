@@ -1,4 +1,4 @@
-# claude-astra protocol
+# claude-conductor protocol
 
 Planner (Claude Pro subscription) writes packets. DeepSeek worker implements them.
 Reviewer (Claude Pro subscription) accepts or returns issues. Repeat, bounded.
@@ -9,25 +9,25 @@ Reviewer (Claude Pro subscription) accepts or returns issues. Repeat, bounded.
 orchestrate.sh start "description"
         │  PHASE=plan                     opens a Claude Pro session (claude)
         ▼
-planner writes .astra/TASK.md            ── worker should not read until handoff
+planner writes .conductor/TASK.md            ── worker should not read until handoff
         │  watch: TASK.md exists         ── (PHASE -> working)
         ▼
 DeepSeek worker session            worker/launch.sh
-        │  reads .astra/TASK.md (and .astra/REVIEW.md if present)
-        │  implements, runs acceptance, commits, writes .astra/EVIDENCE.md
+        │  reads .conductor/TASK.md (and .conductor/REVIEW.md if present)
+        │  implements, runs acceptance, commits, writes .conductor/EVIDENCE.md
         ▼
 watch: git HEAD changed            ── (PHASE -> review)
         │                            opens a fresh Claude Pro session
 claude reviewer reads TASK.md + diff + EVIDENCE.md
         │  runs acceptance itself
         ▼
-writes .astra/REVIEW.md
+writes .conductor/REVIEW.md
    ├─ APPROVED            ── PHASE=approved, packet done, next packet
    └─ ISSUES (§, location, fix) ─→ round +1 → worker (round 2 … <= MAX_ROUNDS=2)
                           └─ round > MAX ─→ PHASE=escalated, planner takes over packet
 ```
 
-## State files (per project, under `.astra/`, git-ignored)
+## State files (per project, under `.conductor/`, git-ignored)
 
 | file | purpose |
 |---|---|
@@ -38,7 +38,7 @@ writes .astra/REVIEW.md
 | `REVIEW.md` | reviewer verdict + numbered issues, or `APPROVED` |
 | `EVIDENCE.md` | worker: what changed, commands run, test output, out-of-scope notes |
 
-Never commit `.astra/`. The driver recreates what it needs.
+Never commit `.conductor/`. The driver recreates what it needs.
 
 ## Hand-off rules
 
@@ -50,7 +50,7 @@ Never commit `.astra/`. The driver recreates what it needs.
    must have passed" is not evidence.
 4. **Numbered, actionable issues.** Each issue = severity + `file:line` + the
    concrete fix. The worker fixes issues only — no new scope.
-5. **Bounded loops.** `ASTRA_MAX_ROUNDS=2`. On exceed, phase → `escalated` and
+5. **Bounded loops.** `CONDUCTOR_MAX_ROUNDS=2`. On exceed, phase → `escalated` and
    the planner finishes that packet on Claude Pro directly.
 6. **Review in one batched pass.** The reviewer writes all issues in a single
    `REVIEW.md`; no back-and-forth polling.
@@ -60,7 +60,7 @@ Never commit `.astra/`. The driver recreates what it needs.
 | role | engine | model | config |
 |---|---|---|---|
 | planner / reviewer | Claude Code, your Pro subscription | subscription default | normal `~/.claude` |
-| worker | Claude Code, DeepSeek API | `deepseek-v4-flash` (override via `ASTRA_WORKER_MODEL`) | `~/.claude-deepseek` (isolated), `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` |
+| worker | Claude Code, DeepSeek API | `deepseek-v4-flash` (override via `CONDUCTOR_WORKER_MODEL`) | `~/.claude-deepseek` (isolated), `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` |
 
 ### Why a separate worker session instead of an in-session subagent?
 Routing a subagent to a third-party API from inside Claude Code today means a

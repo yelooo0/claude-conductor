@@ -33,7 +33,7 @@ never sees mid-work noise.**
 - `deepseek-v4-flash` — default. Advertised as the coding/agentic tier; the
   general recommendation and ~1/3 the output price of `-pro`.
 - `deepseek-v4-pro` — for long, mostly-single-thread reasoning chains where you
-  expect the worker tier to blow the packet. Set `ASTRA_WORKER_MODEL`.
+  expect the worker tier to blow the packet. Set `CONDUCTOR_WORKER_MODEL`.
 
 ## Caching lever (the biggest user-controlled saving)
 DeepSeek auto-caches request prefixes. The worker is instructed to keep its
@@ -53,7 +53,7 @@ prices creeping back up.
 ## Warning signs to watch
 - **Reviewer redoing chunks** (`REVIEW.md` says ~"rewrote the whole thing").
   That means packets are too big or the worker tier is wrong. Re-scope.
-- **Worker missing acceptance repeatedly.** Raise `ASTRA_MAX_ROUNDS`? No —
+- **Worker missing acceptance repeatedly.** Raise `CONDUCTOR_MAX_ROUNDS`? No —
   escalate and re-plan instead. The loop should *converge or escalate*.
 - **Input spend rising without more code.** Verify prompt-cache reuse
   (DeepSeek console shows cache-hit tokens).

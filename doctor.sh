@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# claude-astra doctor : verify local setup without spending any API credit.
+# claude-conductor doctor : verify local setup without spending any API credit.
 set -Eeuo pipefail
 
-ASTRA_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-ASTRA_CONFIG_DIR="${ASTRA_CONFIG_DIR:-$HOME/.claude-deepseek}"
-ASTRA_KEY_FILE="${ASTRA_KEY_FILE:-$ASTRA_CONFIG_DIR/astra.env}"
-WORKER_MODEL="${ASTRA_WORKER_MODEL:-deepseek-v4-flash}"
+CONDUCTOR_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+CONDUCTOR_CONFIG_DIR="${CONDUCTOR_CONFIG_DIR:-$HOME/.claude-deepseek}"
+CONDUCTOR_KEY_FILE="${CONDUCTOR_KEY_FILE:-$CONDUCTOR_CONFIG_DIR/conductor.env}"
+WORKER_MODEL="${CONDUCTOR_WORKER_MODEL:-deepseek-v4-flash}"
 
 ok=0; bad=0
 pass() { ok=$((ok+1)); printf '  ✔ %s\n' "$1"; }
@@ -26,28 +26,28 @@ else
 fi
 
 echo "[2/6] DeepSeek worker key"
-if [[ -f "$ASTRA_KEY_FILE" ]]; then
-  mode="$(stat -f '%Lp' "$ASTRA_KEY_FILE" 2>/dev/null || ls -l "$ASTRA_KEY_FILE" | awk '{print $1}')"
+if [[ -f "$CONDUCTOR_KEY_FILE" ]]; then
+  mode="$(stat -f '%Lp' "$CONDUCTOR_KEY_FILE" 2>/dev/null || ls -l "$CONDUCTOR_KEY_FILE" | awk '{print $1}')"
   if [[ "$mode" != "600" && "$mode" != "-rw-------" ]]; then
-    fail "astra.env permissions are $mode (want 600): chmod 600 \"$ASTRA_KEY_FILE\""
+    fail "conductor.env permissions are $mode (want 600): chmod 600 \"$CONDUCTOR_KEY_FILE\""
   else
     pass "key file permissions ok ($mode)"
   fi
   # shellcheck disable=SC1090
-  source "$ASTRA_KEY_FILE"
-  [[ -n "${DEEPSEEK_API_KEY:-}" ]] && pass "DEEPSEEK_API_KEY set" || fail "astra.env has no DEEPSEEK_API_KEY"
+  source "$CONDUCTOR_KEY_FILE"
+  [[ -n "${DEEPSEEK_API_KEY:-}" ]] && pass "DEEPSEEK_API_KEY set" || fail "conductor.env has no DEEPSEEK_API_KEY"
 else
-  fail "no key at $ASTRA_KEY_FILE — run worker/setup.sh"
+  fail "no key at $CONDUCTOR_KEY_FILE — run worker/setup.sh"
 fi
 
 echo "[3/6] Worker isolation"
-if [[ "$ASTRA_CONFIG_DIR" == "$HOME/.claude" ]]; then
-  fail "ASTRA_CONFIG_DIR collides with your subscription config ($ASTRA_CONFIG_DIR)"
+if [[ "$CONDUCTOR_CONFIG_DIR" == "$HOME/.claude" ]]; then
+  fail "CONDUCTOR_CONFIG_DIR collides with your subscription config ($CONDUCTOR_CONFIG_DIR)"
 else
-  pass "isolated config dir: $ASTRA_CONFIG_DIR"
+  pass "isolated config dir: $CONDUCTOR_CONFIG_DIR"
 fi
-if [[ -f "$ASTRA_CONFIG_DIR/CLAUDE.md" ]]; then
-  pass "worker policy installed at $ASTRA_CONFIG_DIR/CLAUDE.md"
+if [[ -f "$CONDUCTOR_CONFIG_DIR/CLAUDE.md" ]]; then
+  pass "worker policy installed at $CONDUCTOR_CONFIG_DIR/CLAUDE.md"
 else
   fail "worker policy missing — run worker/setup.sh"
 fi
@@ -68,7 +68,7 @@ echo "[5/6] git (required by the handoff driver)"
 if command -v git >/dev/null 2>&1; then pass "git found"; else fail "git missing"; fi
 
 echo "[6/6] target project"
-PROJECT_DIR="${ASTRA_PROJECT_DIR:-$PWD}"
+PROJECT_DIR="${CONDUCTOR_PROJECT_DIR:-$PWD}"
 if [[ -d "$PROJECT_DIR" ]]; then
   pass "project dir exists: $PROJECT_DIR"
   git -C "$PROJECT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 \

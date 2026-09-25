@@ -23,6 +23,6 @@ The worker must run these and they must pass before handoff:
 Without reading this packet, what must be verifiable from the diff + tests alone?
 
 ---
-_Worker writes its provenance to `.astra/EVIDENCE.md` and commits when done.
-Reviewer reads the diff + evidence, runs acceptance checks, and writes `.astra/REVIEW.md`
+_Worker writes its provenance to `.conductor/EVIDENCE.md` and commits when done.
+Reviewer reads the diff + evidence, runs acceptance checks, and writes `.conductor/REVIEW.md`
 (numbered issues) or `APPROVED`.

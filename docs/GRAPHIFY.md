@@ -1,7 +1,7 @@
 # Graphify integration (knowledge-graph navigation)
 
 Graphify maps a codebase into a queryable knowledge graph (code parsed locally
-via tree-sitter AST — 0 API calls). Both agents in the claude-astra loop query
+via tree-sitter AST — 0 API calls). Both agents in the claude-conductor loop query
 the graph instead of grepping + re-reading files, which is where the bulk of
 their tokens go. Measured effect: ~82–90% less context per orientation question
 (~2k tokens vs ~10–17k reading files).

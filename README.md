@@ -1,4 +1,4 @@
-# claude-astra
+# claude-conductor
 
 Plan with **Claude Pro** → build with **DeepSeek** (pay-per-token) → review
 with **Claude Pro**. A two-model orchestration loop for coding, modelled on the
@@ -6,7 +6,7 @@ Codex-native *Astra Flash Orchestrator* but built on officially supported paths
 for Claude.
 
 No copy-paste, no in-session patching, no ToS-risk relays. Two separate Claude
-Code sessions hand off through git and `.astra/` files; `orchestrate.sh` opens
+Code sessions hand off through git and `.conductor/` files; `orchestrate.sh` opens
 the right session in a new Terminal window each step and notifies you which one
 needs you.
 
@@ -35,12 +35,37 @@ planner (Claude Pro) ──writes TASK.md──▶ DeepSeek worker ──commits
 # 2. sanity check (no inference)
 ./doctor.sh
 
-# 3. begin a packet in your project (from the project dir):
-/path/to/claude-astra/drive/orchestrate.sh start "implement X per docs/plan.md"
+# 3. begin a packet in your project (from the project dir) — one command boots
+#    everything: git-check + baseline, the Claude Pro planner window (the
+#    "brain"), AND a background coordinator that opens worker/reviewer windows
+#    and notifies you on each handoff. Nothing else to run:
+/path/to/claude-conductor/drive/orchestrate.sh up "implement X per docs/plan.md"
 
-# 4. keep watching in a background terminal:
-/path/to/claude-astra/drive/orchestrate.sh watch
+#    Or boot idle and wait for your first prompt instead:
+/path/to/claude-conductor/drive/orchestrate.sh up
 ```
+
+`up` inits the folder as a git repo if needed (the loop hands off through git
+commits), clears stale state, opens the planner, and starts the coordinator in
+its own Terminal window. You just wait for macOS notifications and switch to
+each session as prompted. `watch`/`start` still exist for manual control.
+
+> **Always run `up` from a project folder, never from `~` or `/`.** `up` may
+> create a git repo and a baseline commit of the folder — in your home
+> directory that would try to sweep Photos/Mail/etc. into git. `up` refuses to
+> run in `~` or `/` for this reason.
+
+## Keep prompting the brain (router mode)
+
+After `up`, the planner window is a **router**: every prompt you type there is
+turned into a packet automatically and handed to the DeepSeek worker, and the
+review comes back to the *same* brain window when the worker is done — you never
+type another command. The brain session follows `orchestrator/templates/TASK.md`,
+resets state via `orchestrate.sh reroute "<task>"`, and reviews via the
+`.conductor/REVIEW_REQUESTED` handshake that `up` enables by default.
+
+To see the flow in code: `docs/PROTOCOL.md`, and the seeds in
+`drive/orchestrate.sh` (`planner_seed` / `review_handoff`).
 
 `watch` detects each handoff and opens the next session in a fresh Terminal
 window, plus a macOS notification saying *where to switch*. You do the thinking
@@ -49,6 +74,9 @@ in each window; you never copy-paste task text.
 ## Commands
 
 ```
+up "<description>"      one command: git-check + planner (router) + coordinator
+up                      boot idle — brain + coordinator wait for your first prompt
+reroute "<description>" reset to plan from the brain session (no new window)
 start "<description>"   begin a packet            (opens Claude Pro planner)
 watch [--once]          coordinate handoffs        (opens worker/reviewer as needed)
 status                  current phase + round
@@ -58,8 +86,8 @@ reset                   clear packet state
 help                    full command + env reference
 ```
 
-Driver env: `ASTRA_PROJECT_DIR`, `ASTRA_MAX_ROUNDS` (default 2),
-`ASTRA_POLL_INTERVAL` (default 3s), `ASTRA_NOTIFICATIONS` (default 1).
+Driver env: `CONDUCTOR_PROJECT_DIR`, `CONDUCTOR_MAX_ROUNDS` (default 2),
+`CONDUCTOR_POLL_INTERVAL` (default 3s), `CONDUCTOR_NOTIFICATIONS` (default 1).
 
 ## Docs
 
