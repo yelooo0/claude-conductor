@@ -9,6 +9,7 @@ CONDUCTOR_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)
 CONDUCTOR_CONFIG_DIR="${CONDUCTOR_CONFIG_DIR:-$HOME/.claude-deepseek}"
 CONDUCTOR_KEY_FILE="${CONDUCTOR_KEY_FILE:-$CONDUCTOR_CONFIG_DIR/conductor.env}"
 CONDUCTOR_WORKER_MODEL="${CONDUCTOR_WORKER_MODEL:-deepseek-v4-flash}"
+CONDUCTOR_BASE_URL="${CONDUCTOR_BASE_URL:-https://api.deepseek.com/anthropic}"
 
 if ! command -v claude >/dev/null 2>&1; then
   echo "error: 'claude' not found on PATH. Install Claude Code first." >&2
@@ -42,7 +43,7 @@ else
 fi
 
 # --- model + provider pinning (all slots, so nothing silently hits another tier)
-export ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic"
+export ANTHROPIC_BASE_URL="$CONDUCTOR_BASE_URL"
 export ANTHROPIC_AUTH_TOKEN="$DEEPSEEK_API_KEY"
 export ANTHROPIC_MODEL="$CONDUCTOR_WORKER_MODEL"
 export ANTHROPIC_DEFAULT_OPUS_MODEL="$CONDUCTOR_WORKER_MODEL"
@@ -57,7 +58,7 @@ export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
 cd "$PROJECT_DIR"
 echo "---------------- claude-conductor worker ----------------"
-echo "provider : DeepSeek (Anthropic-compatible)"
+echo "provider : $CONDUCTOR_BASE_URL (Anthropic-compatible)"
 echo "model    : $CONDUCTOR_WORKER_MODEL (all slots pinned)"
 echo "config   : $CLAUDE_CONFIG_DIR (isolated, subscription untouched)"
 echo "project  : $PROJECT_DIR"

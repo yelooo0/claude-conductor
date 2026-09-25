@@ -89,6 +89,31 @@ help                    full command + env reference
 Driver env: `CONDUCTOR_PROJECT_DIR`, `CONDUCTOR_MAX_ROUNDS` (default 2),
 `CONDUCTOR_POLL_INTERVAL` (default 3s), `CONDUCTOR_NOTIFICATIONS` (default 1).
 
+## Bring your own worker model / endpoint
+
+The worker tier is a *pluggable endpoint*, not a DeepSeek requirement. The
+launcher keeps it useful by default (DeepSeek's Anthropic-compatible API), but
+you can point the muscle tier at any Anthropic-compatible host — OpenRouter, a
+self-hosted gateway, a free tier — by setting two env vars before `up`:
+
+```bash
+export CONDUCTOR_BASE_URL="https://openrouter.ai/api/v1"   # any Anthropic-compatible endpoint
+export CONDUCTOR_WORKER_MODEL="model/provider/id"          # model name for every pinned slot
+```
+
+- `CONDUCTOR_BASE_URL` defaults to `https://api.deepseek.com/anthropic`
+  (DeepSeek's official Anthropic-compatible endpoint). Override it to reroute
+  the worker wholesale.
+- `CONDUCTOR_WORKER_MODEL` defaults to `deepseek-v4-flash`. It is pinned to all
+  five model slots (default opus/sonnet/haiku, `ANTHROPIC_MODEL`, and subagents)
+  so nothing silently falls back to your subscription tier.
+- DeepSeek is the default because it offers the best capability-per-dollar for
+  agentic coding — not because it's structurally required. A free/cheaper
+  endpoint works if its output quality clears the packet bar; if the worker
+  can't pass acceptance checks, reviewer rework erases the savings.
+
+See `docs/COST.md` for the cost model and current pricing.
+
 ## Docs
 
 - `docs/PROTOCOL.md` — the handoff protocol, state files, routing table, escalation policy
